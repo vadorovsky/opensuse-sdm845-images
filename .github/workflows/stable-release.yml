@@ -10,7 +10,6 @@ permissions:
 
 env:
   BUILD_DIR: /tmp/build-results
-  ZIP_BASENAME: openSUSE-Tumbleweed-ARM-PHOSH-oneplus6
 
 jobs:
   build-and-release:
@@ -32,7 +31,7 @@ jobs:
       - name: Prepare build directory
         run: mkdir -p ${{ env.BUILD_DIR }}
 
-      - name: Run build script
+      - name: Run build script (builds PHOSH and PLAMO)
         run: sudo bash all.sh
         shell: bash
 
@@ -40,13 +39,13 @@ jobs:
         run: |
           DATE_TAG=$(date +'%Y%m%d')
           VERSION_TAG=${GITHUB_REF##*/}
-          echo "DATE_TAG=$DATE_TAG" >> $GITHUB_ENV
-          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
+          echo "DATE_TAG=${DATE_TAG}" >> $GITHUB_ENV
+          echo "VERSION_TAG=${VERSION_TAG}" >> $GITHUB_ENV
 
       - name: Package generated files
         run: |
-          ZIP_FILE="${{ env.BUILD_DIR }}/${{ env.ZIP_BASENAME }}_${{ env.VERSION_TAG }}.zip"
-          echo "📦 Empaquetando archivos openSUSE* en: $ZIP_FILE"
+          ZIP_FILE="${{ env.BUILD_DIR }}/openSUSE-Tumbleweed-ARM_${{ env.VERSION_TAG }}.zip"
+          echo "📦 Empaquetando archivos en: $ZIP_FILE"
           shopt -s nullglob
           FILES=(openSUSE*)
           if [ ${#FILES[@]} -eq 0 ]; then
@@ -54,7 +53,7 @@ jobs:
             exit 1
           fi
           zip -r "$ZIP_FILE" "${FILES[@]}"
-          echo "ZIP_FILE=$ZIP_FILE" >> $GITHUB_ENV
+        shell: bash
 
       - name: Delete previous release with same tag if exists
         run: |
@@ -66,12 +65,11 @@ jobs:
       - name: Create stable release
         run: |
           gh release create "${{ env.VERSION_TAG }}" \
-            "${{ env.ZIP_FILE }}" \
+            "${{ env.BUILD_DIR }}/openSUSE-Tumbleweed-ARM_${{ env.VERSION_TAG }}.zip" \
             --title "Opensuse Mobile - Stable - ${{ env.VERSION_TAG }}" \
-            --notes "Stable release for Oneplus 6/6t (enchilada/fajita) from tag ${{ env.VERSION_TAG }}" 
+            --notes "Stable PHOSH & PLAMO release for Oneplus 6/6t (enchilada/fajita) from tag ${{ env.VERSION_TAG }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clean up
         run: sudo rm -rf ${{ env.BUILD_DIR }}
-
